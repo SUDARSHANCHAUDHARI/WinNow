@@ -16,9 +16,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from lib import authenticity, fusion, render, render_html, render_json
+from lib import authenticity, fusion, relevance, render, render_html, render_json
 from lib.adapters import REGISTRY
 from lib.schema import Brief, Item
+
+# Keyword-search sources are brand-ambiguous ("Notion" app vs band); review
+# sources are fetched by app id so they are unambiguous and never context-filtered.
+KEYWORD_SOURCES = {"reddit", "youtube", "x", "pantip"}
 
 
 def gather(topic: str, sources: list[str], *, lookback_days: int, limit: int) -> list[Item]:
@@ -49,9 +53,29 @@ def _within_window(items: list[Item], lookback_days: int) -> list[Item]:
     return kept
 
 
-def build_brief(topic: str, sources: list[str], *, lookback_days: int, limit: int) -> Brief:
+def _disambiguate(items: list[Item], include: list[str], exclude: list[str]) -> list[Item]:
+    """Apply context filtering to keyword-source items only."""
+    if not include and not exclude:
+        return items
+    kept = []
+    for it in items:
+        if it.source not in KEYWORD_SOURCES:
+            kept.append(it)
+            continue
+        ctx = " ".join([it.title, it.text,
+                        str(it.metadata.get("subreddit", "")),
+                        str(it.metadata.get("channel", ""))])
+        if relevance.passes_context(ctx, include, exclude):
+            kept.append(it)
+    return kept
+
+
+def build_brief(topic: str, sources: list[str], *, lookback_days: int, limit: int,
+                context_include: list[str] | None = None,
+                context_exclude: list[str] | None = None) -> Brief:
     raw = gather(topic, sources, lookback_days=lookback_days, limit=limit * 3)
     raw = _within_window(raw, lookback_days)
+    raw = _disambiguate(raw, context_include or [], context_exclude or [])
     authenticity.score_corpus(raw)
     ranked = fusion.rank(raw, limit=limit)
     brief = Brief(topic=topic, items=ranked)
@@ -80,6 +104,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--store-path", help="override the SQLite db path")
     p.add_argument("--vs", action="append", default=[],
                    help="compare against another entity (repeatable): --vs Obsidian")
+    p.add_argument("--context-include",
+                   help="disambiguation: keyword-source items must mention one of these (comma list)")
+    p.add_argument("--context-exclude",
+                   help="disambiguation: drop keyword-source items mentioning any of these (comma list)")
     args = p.parse_args(argv)
 
     sources = [s.strip() for s in args.sources.split(",") if s.strip()]
@@ -88,12 +116,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"unknown sources: {unknown}. available: {list(REGISTRY)}", file=sys.stderr)
         return 2
 
+    def _csv(v: str | None) -> list[str]:
+        return [t.strip() for t in v.split(",") if t.strip()] if v else []
+    ctx_in, ctx_ex = _csv(args.context_include), _csv(args.context_exclude)
+
     if args.vs:
         from lib import compare
         entities = [args.topic, *args.vs]
         summaries = []
         for ent in entities:
-            b = build_brief(ent, sources, lookback_days=args.lookback_days, limit=args.limit)
+            b = build_brief(ent, sources, lookback_days=args.lookback_days, limit=args.limit,
+                            context_include=ctx_in, context_exclude=ctx_ex)
             summaries.append(compare.summarize(b))
         result = compare.compare(summaries)
         if args.emit == "json":
@@ -103,7 +136,8 @@ def main(argv: list[str] | None = None) -> int:
             print(compare.to_markdown(result))
         return 0
 
-    brief = build_brief(args.topic, sources, lookback_days=args.lookback_days, limit=args.limit)
+    brief = build_brief(args.topic, sources, lookback_days=args.lookback_days, limit=args.limit,
+                        context_include=ctx_in, context_exclude=ctx_ex)
 
     if args.store:
         from lib import store

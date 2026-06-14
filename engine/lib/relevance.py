@@ -41,3 +41,23 @@ def matches(topic: str, *texts: str) -> bool:
         return True
     haystack = " ".join(t for t in texts if t).lower()
     return primary in haystack
+
+
+def passes_context(
+    text: str,
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+) -> bool:
+    """Disambiguation gate for ambiguous brands ("Notion" app vs band).
+
+    A reasoning host (or the user) supplies context: `exclude` drops items
+    carrying off-sense terms (song, lyrics, album); `include` requires at least
+    one in-sense term (app, workspace, software). Both empty = no-op, so this
+    never changes behavior unless context is explicitly provided.
+    """
+    t = text.lower()
+    if exclude and any(term.lower() in t for term in exclude if term):
+        return False
+    if include and not any(term.lower() in t for term in include if term):
+        return False
+    return True

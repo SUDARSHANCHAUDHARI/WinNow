@@ -25,6 +25,30 @@ export type Brief = {
   items: BriefItem[];
 };
 
+export type CompareSnippet = {
+  text: string;
+  rating: number | null;
+  trust: number;
+  source: string;
+  url: string;
+};
+
+export type CompareEntity = {
+  topic: string;
+  item_count: number;
+  avg_rating: number | null;
+  avg_trust: number | null;
+  suspicious: number;
+  suspicious_share: number;
+  top_praise: CompareSnippet | null;
+  top_complaint: CompareSnippet | null;
+};
+
+export type CompareResult = {
+  entities: CompareEntity[];
+  verdict: string | null;
+};
+
 export const SOURCES = ["appstore", "playstore", "reddit", "pantip", "youtube", "x"] as const;
 export type Source = (typeof SOURCES)[number];
 

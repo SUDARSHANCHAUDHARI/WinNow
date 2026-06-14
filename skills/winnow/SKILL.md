@@ -40,6 +40,20 @@ python3 "$ENGINE" "<TOPIC>" --sources <sources> --limit 25
 - App names resolve to an App Store id automatically. Package ids go to Play Store.
 - One dead source never fails the run; it logs to stderr and continues.
 
+**Disambiguate ambiguous brands.** When the topic is a word that also means
+something else (Notion the app vs the band; Apple the company vs the fruit) and
+you are using a keyword source (`reddit`, `youtube`, `x`, `pantip`), YOU know
+which sense is meant - so pass it through:
+
+```bash
+--context-exclude "song,lyrics,album,music video,band,movie,trailer"
+--context-include "app,software,workspace,update,feature"
+```
+
+These filters apply ONLY to keyword sources (review sources are fetched by app
+id and are already unambiguous). Supply a tight exclude list for any topic whose
+name collides with an unrelated common sense. Both flags are no-ops if omitted.
+
 ## Read the output
 
 The engine prints a markdown brief: a header, optional `⚠️` corpus warnings, then

@@ -58,25 +58,38 @@ cd winnow-web && pnpm install && pnpm dev   # http://localhost:3000
 ## The spine: authenticity
 
 Every `Item` carries a `0..1` trust score plus the signals that produced it
-([`engine/lib/authenticity.py`](engine/lib/authenticity.py)). v0 detectors:
+([`engine/lib/authenticity.py`](engine/lib/authenticity.py)). Detectors:
 
 - **review-burst** — a spike of items on one day/version = coordinated push
 - **near-duplicate** — templated/copy-pasted text = astroturf
 - **thin-text** — "great app!!!" carries little signal
 - **anon / generated-handle** — missing or auto-looking author
+- **new-account** / **low-karma** — Reddit OAuth enrichment (dormant until keyed)
 
-Ranking applies a **trust gate** so 500 upvotes at 0.2 trust rank below 50 at
-1.0 trust ([`engine/lib/fusion.py`](engine/lib/fusion.py)). Adding Reddit
-account-age/karma later is a new detector, not a rewrite.
+Ranking ([`engine/lib/fusion.py`](engine/lib/fusion.py)) applies a **trust gate**
+(500 upvotes at 0.2 trust rank below 50 at 1.0 trust), **per-source engagement
+normalization** (so a million-view video does not crush a 50-helpful review),
+and a **diversity floor** so no source is shut out of a mixed run.
+
+```bash
+python3 engine/winnow.py "Notion" --vs "Obsidian" --sources appstore   # competitor diff
+python3 engine/winnow.py "Notion" --sources reddit,youtube \
+  --context-exclude "song,band,movie"                                  # disambiguation
+```
 
 ## Status
 
-MVP. App Store adapter is live-validated and fully working. Play Store
-(batchexecute RPC) and Pantip (RSS) are wired with defensive parsers.
-Reddit/X and the web dashboard are next — see [ARCHITECTURE.md](ARCHITECTURE.md).
+All four planned phases are built. 6 source adapters (App Store, Play Store,
+Pantip, Reddit, YouTube, X), the authenticity spine, SQLite persistence, and
+competitor diff. Two surfaces: the agent skill and a Next.js dashboard (brief
+view, trust bars, reputation-trend chart, HTML export, competitor diff). See
+[STATUS.md](STATUS.md) for the full scorecard.
+
+Reddit OAuth enrichment and the X adapter are code-complete but dormant until you
+add credentials (see `.env.example`).
 
 ```bash
-python3 -m pytest -q     # 10 tests
+python3 -m pytest -q     # 58 tests
 ```
 
 ## Sources validated (live probes, 2026-06)
