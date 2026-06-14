@@ -1,0 +1,17 @@
+[project]
+name = "winnow"
+version = "0.1.0"
+description = "Last-30-days research weighted by authenticity, not raw engagement. Covers the sources last30days can't: app-store reviews and regional walled gardens."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest>=8,<10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = ["-q"]

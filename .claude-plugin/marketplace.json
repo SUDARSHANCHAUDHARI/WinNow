@@ -1,0 +1,24 @@
+{
+  "name": "winnow",
+  "owner": {
+    "name": "Sudarshan",
+    "url": "https://github.com/SUDARSHANCHAUDHARI"
+  },
+  "metadata": {
+    "description": "Marketplace hosting the Winnow authenticity-ranked research plugin."
+  },
+  "plugins": [
+    {
+      "name": "winnow",
+      "description": "Last-30-days research ranked by authenticity, not raw engagement. App Store + Play Store reviews and Pantip (Thailand).",
+      "version": "0.1.0",
+      "author": {
+        "name": "Sudarshan",
+        "url": "https://github.com/SUDARSHANCHAUDHARI"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/SUDARSHANCHAUDHARI/winnow"
+    }
+  ]
+}

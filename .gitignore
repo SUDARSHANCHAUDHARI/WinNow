@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.sqlite
+*.db
+.flow/
+out/
+
+# node / next (belt-and-suspenders; winnow-web has its own .gitignore too)
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+<category term="reddit.com" label="r/reddit.com"/>
+<updated>2026-06-14T17:50:00+00:00</updated>
+<entry>
+<author><name>/u/note_taker_99</name><uri>https://www.reddit.com/user/note_taker_99</uri></author>
+<category term="Notion" label="r/Notion"/>
+<content type="html">&lt;div&gt;&lt;p&gt;The new sync is finally reliable on iOS after months of fumbling.&lt;/p&gt; submitted by /u/note_taker_99&lt;/div&gt;</content>
+<id>t3_aaa111</id>
+<link href="https://www.reddit.com/r/Notion/comments/aaa111/sync_finally_works/" />
+<updated>2026-06-13T09:00:00+00:00</updated>
+<published>2026-06-13T09:00:00+00:00</published>
+<title>Sync finally works on iOS</title>
+</entry>
+<entry>
+<author><name>/u/frustrated_pm</name><uri>https://www.reddit.com/user/frustrated_pm</uri></author>
+<category term="productivity" label="r/productivity"/>
+<content type="html">&lt;div&gt;&lt;p&gt;Notion keeps crashing on large databases since the last update.&lt;/p&gt;&lt;/div&gt;</content>
+<id>t3_bbb222</id>
+<link href="https://www.reddit.com/r/productivity/comments/bbb222/notion_crash/" />
+<published>2026-06-10T14:20:00+00:00</published>
+<title>Notion crashes on big databases</title>
+</entry>
+</feed>

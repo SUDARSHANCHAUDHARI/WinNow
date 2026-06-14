@@ -1,0 +1,13 @@
+{
+  "name": "winnow",
+  "version": "0.1.0",
+  "description": "Last-30-days research ranked by authenticity, not raw engagement. Covers App Store + Play Store reviews and Pantip (Thailand) — sources other tools skip.",
+  "author": {
+    "name": "Sudarshan",
+    "url": "https://github.com/SUDARSHANCHAUDHARI"
+  },
+  "homepage": "https://github.com/SUDARSHANCHAUDHARI/winnow",
+  "repository": "https://github.com/SUDARSHANCHAUDHARI/winnow",
+  "license": "MIT",
+  "keywords": ["research", "app-reviews", "appstore", "playstore", "authenticity", "anti-astroturf", "pantip", "thailand", "trends", "reddit"]
+}
