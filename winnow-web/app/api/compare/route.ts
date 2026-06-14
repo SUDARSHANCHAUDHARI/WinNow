@@ -2,33 +2,23 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 
-// Engine lives at <repo>/engine/winnow.py; this app is <repo>/winnow-web.
 const ENGINE = path.join(process.cwd(), "..", "engine", "winnow.py");
 const ALLOWED_SOURCES = ["appstore", "playstore", "reddit", "pantip", "youtube", "x"];
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-type RunBody = {
+type CompareBody = {
   topic?: string;
+  vs?: string[];
   sources?: string[];
-  limit?: number;
   contextExclude?: string;
 };
 
-function runEngine(topic: string, sources: string[], limit: number, exclude?: string): Promise<unknown> {
-  // spawn with an arg array (never a shell string) so the topic can't inject.
-  const args = [
-    ENGINE,
-    topic,
-    "--sources",
-    sources.join(","),
-    "--limit",
-    String(limit),
-    "--emit",
-    "json",
-    "--store", // persist every run so the trend view accumulates history
-  ];
+function runCompare(topic: string, vs: string[], sources: string[], exclude?: string): Promise<unknown> {
+  const args = [ENGINE, topic];
+  for (const v of vs) args.push("--vs", v);
+  args.push("--sources", sources.join(","), "--limit", "25", "--emit", "json");
   if (exclude && exclude.trim()) args.push("--context-exclude", exclude.trim());
   return new Promise((resolve, reject) => {
     const proc = spawn("python3", args, { cwd: path.dirname(ENGINE) });
@@ -49,7 +39,7 @@ function runEngine(topic: string, sources: string[], limit: number, exclude?: st
 }
 
 export async function POST(req: NextRequest) {
-  let body: RunBody;
+  let body: CompareBody;
   try {
     body = await req.json();
   } catch {
@@ -57,29 +47,19 @@ export async function POST(req: NextRequest) {
   }
 
   const topic = (body.topic ?? "").trim();
-  if (!topic) {
-    return NextResponse.json({ error: "topic is required" }, { status: 400 });
+  const vs = (body.vs ?? []).map((v) => v.trim()).filter(Boolean);
+  if (!topic || vs.length === 0) {
+    return NextResponse.json({ error: "topic and at least one --vs entity are required" }, { status: 400 });
   }
 
-  const sources = (body.sources ?? ["appstore"]).filter((s) =>
-    ALLOWED_SOURCES.includes(s),
-  );
+  const sources = (body.sources ?? ["appstore"]).filter((s) => ALLOWED_SOURCES.includes(s));
   if (sources.length === 0) {
-    return NextResponse.json(
-      { error: `sources must be a subset of ${ALLOWED_SOURCES.join(", ")}` },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: `sources must be a subset of ${ALLOWED_SOURCES.join(", ")}` }, { status: 400 });
   }
-
-  const limit = Math.min(Math.max(Number(body.limit) || 25, 1), 50);
 
   try {
-    const brief = await runEngine(topic, sources, limit, body.contextExclude);
-    return NextResponse.json(brief);
+    return NextResponse.json(await runCompare(topic, vs, sources, body.contextExclude));
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "engine failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: e instanceof Error ? e.message : "compare failed" }, { status: 500 });
   }
 }

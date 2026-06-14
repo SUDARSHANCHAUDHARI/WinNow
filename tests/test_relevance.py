@@ -16,3 +16,24 @@ def test_matches_requires_primary_entity():
 
 def test_empty_topic_keeps_everything():
     assert relevance.matches("the for", "literally anything")
+
+
+def test_passes_context_noop_without_terms():
+    assert relevance.passes_context("anything at all") is True
+
+
+def test_passes_context_exclude_drops_off_sense():
+    # "Notion" the band vs the app.
+    assert not relevance.passes_context(
+        "Notion official music video by The Rare Occasions",
+        exclude=["music video", "lyrics", "song"],
+    )
+    assert relevance.passes_context(
+        "Notion app review: the new sync feature",
+        exclude=["music video", "lyrics", "song"],
+    )
+
+
+def test_passes_context_include_requires_in_sense():
+    assert relevance.passes_context("Notion workspace tips", include=["app", "workspace", "software"])
+    assert not relevance.passes_context("Notion guitar tab", include=["app", "workspace", "software"])

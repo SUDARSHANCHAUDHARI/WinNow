@@ -19,7 +19,7 @@ surfaces (agent skill + web dashboard).
 | 3 Web dashboard | T9 scaffold · T10 engine API · T11 brief view · T12 trend chart · T13 HTML export | ✅ |
 | 4 Differentiators | T14 competitor diff · T15 YouTube + X adapters | ✅ |
 
-49 engine tests passing. Web typecheck + lint clean.
+58 engine tests passing. Web typecheck + lint clean.
 
 ## Architecture (see ARCHITECTURE.md)
 
@@ -57,7 +57,7 @@ python3 engine/winnow.py "Notion" --sources appstore,reddit --limit 25
 python3 engine/winnow.py "Notion" --vs "Obsidian" --sources appstore   # competitor diff
 python3 engine/winnow.py "Slack" --sources appstore --store            # persist for trends
 cd winnow-web && pnpm dev                                              # dashboard :3000
-python3 -m pytest -q                                                    # 49 tests
+python3 -m pytest -q                                                    # 58 tests
 bash build-skill.sh                                                     # dist/winnow.skill
 ```
 
@@ -65,11 +65,17 @@ bash build-skill.sh                                                     # dist/w
 
 - **CI** (T8): pytest-on-push workflow. Blocked by hook + global rule; needs an
   explicit "add CI" instruction.
-- **Brand disambiguation**: "Notion" the word/band vs the app. Token-grounding
-  can't separate them; needs a rerank/subreddit-context signal.
-- **Cross-source engagement normalization**: Reddit RSS gives engagement=0, so in
-  mixed runs review items (real helpful-counts) outrank Reddit. Needs per-source
-  rank normalization (RRF-style) in fusion.
+- ~~**Brand disambiguation**~~: DONE - `--context-include` / `--context-exclude`
+  filter keyword sources (reddit/youtube/x/pantip); the host model supplies the
+  terms (SKILL.md). Review sources are unambiguous and never filtered.
+- ~~**Cross-source engagement normalization**~~: DONE - `fusion.rank` now scores
+  engagement per-source (log-normalized vs each source's top item), so YouTube's
+  millions no longer crush a 50-helpful review, PLUS a per-source diversity floor
+  (`min_per_source=2`) so a zero-engagement source (Reddit RSS) is not shut out of
+  a mixed run. Mixed appstore+reddit run went from 7:1 to 6:2.
+- ~~**Dashboard feature parity**~~: DONE - the web UI now exposes competitor diff
+  (`/api/compare` + CompareView, "Compare vs…" input) and disambiguation
+  ("Exclude terms…" input), matching the engine/CLI.
 - **X query-id rotation**: the GraphQL query id is hard-coded with an env override
   (`X_SEARCH_QUERY_ID`); will need updating when X changes it.
 - **Not a git repo yet**: `git init` + first commit pending.

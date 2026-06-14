@@ -13,19 +13,20 @@ item is trust-scored, and ranking gates on that score. The three product angles
 ## Shape
 
 ```
-                 ┌──────────────────────────────┐
-                 │  AUTHENTICITY ENGINE (spine)  │  authenticity.py
-                 │  burst · duplicate · thin ·   │  ← the differentiator
-                 │  anon/generated-handle        │
-                 └───────────────┬──────────────┘
-   adapters/                     │ fusion.py (trust-gated rank)
-   ┌──────────────┐              │
+                 ┌──────────────────────────────────────┐
+                 │  AUTHENTICITY ENGINE (spine)          │  authenticity.py
+                 │  burst · duplicate · thin · anon ·    │  ← the differentiator
+                 │  new-account · low-karma              │
+                 └───────────────┬──────────────────────┘
+   adapters/                     │ fusion.py (trust gate · per-source
+   ┌──────────────┐              │            normalization · diversity floor)
    │ appstore  ✅ │   gather()   ▼          surfaces
-   │ playstore ✅ │ ──────────► Brief ───►  • CLI (winnow.py)  ✅
-   │ pantip    ✅ │  (threaded)  │          • Agent Skill (SKILL.md) — next
-   │ reddit    ◻︎ │              │          • Web dashboard         — next
-   │ x / yt    ◻︎ │           render.py
-   └──────────────┘            (markdown)
+   │ playstore ✅ │ ──────────► Brief ───►  • CLI (winnow.py)        ✅
+   │ pantip    ✅ │  (threaded)  │          • Agent Skill (SKILL.md) ✅
+   │ reddit    ✅ │              │          • Web dashboard          ✅
+   │ youtube   ✅ │       render md/html/json + compare
+   │ x         ✅ │       --store SQLite (trend tracking)
+   └──────────────┘
 ```
 
 ## Data flow (one run)
@@ -64,22 +65,25 @@ extension point: a new source = one file + one registry line.
 - **Rejected:** scraping undocumented frontend partials as a primary path. RSS
   and official RPCs first; defensive parsers return `[]` on shape drift.
 
-## Roadmap
+## Roadmap (all phases built)
 
-| Phase | Scope |
-|---|---|
-| ✅ 0 | Engine + App Store/Play Store/Pantip adapters + authenticity v0 + CLI + tests |
-| 1 | Reddit (official API) + account-age/karma detector; `--store` SQLite persistence |
-| 2 | Thin `SKILL.md` wrapper; multi-host packaging (plugin.json, npx skills) |
-| 3 | Web dashboard: trend tracking over stored runs, shareable HTML briefs |
-| 4 | App-name→id resolution UX, competitor diff (`my app vs theirs`), X/YouTube |
+| Phase | Scope | Status |
+|---|---|---|
+| 0/1 | Adapters, authenticity spine + account-age/karma, `--store` SQLite, name→id | ✅ |
+| 2 | Thin `SKILL.md` wrapper, self-contained `.skill` build, plugin manifests | ✅ |
+| 3 | Web dashboard: brief view, reputation-trend chart, HTML export | ✅ |
+| 4 | Competitor diff, YouTube + X adapters, brand disambiguation | ✅ |
+
+Live-validated, code-complete-but-dormant (needs keys: Reddit OAuth, X cookies),
+and current open items are tracked in [STATUS.md](STATUS.md).
 
 ## Open risks
 
-- **Play Store batchexecute** payload/parse is brittle by nature; live-probe
-  reachability is confirmed but full-field extraction needs a fixture-backed
-  test before it's load-bearing.
-- **Authenticity v0 is heuristic.** Burst/duplicate are robust; account-level
-  signals (the strongest) require per-source enrichment not yet built.
-- **Pantip** RSS has no native query — current matching is title/desc contains.
-  The token-authed search API is the upgrade path.
+- **Play Store batchexecute** parse is brittle by nature; fixture-backed now, but
+  a Google template change can still break field extraction (degrades to `[]`).
+- **X GraphQL** needs browser cookies and a query id that X rotates
+  (`X_SEARCH_QUERY_ID` override); inherently fragile.
+- **Brand disambiguation** is context-term based (host/user supplied), not a
+  knowledge base — a tight exclude list is on the caller.
+- **Pantip** RSS has no native query — matching is title/desc contains; the
+  token-authed search API is the upgrade path.

@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Brief, BriefItem, SOURCES, Source, TRUST_COLOR } from "./types";
+import { Brief, BriefItem, CompareResult, SOURCES, Source, TRUST_COLOR } from "./types";
 import TrendChart, { TrendPoint } from "./TrendChart";
+import CompareView from "./CompareView";
 import { downloadBrief } from "./exportHtml";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
+  const [vs, setVs] = useState("");
+  const [exclude, setExclude] = useState("");
   const [sources, setSources] = useState<Source[]>(["appstore"]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [brief, setBrief] = useState<Brief | null>(null);
   const [trend, setTrend] = useState<TrendPoint[] | null>(null);
+  const [comparison, setComparison] = useState<CompareResult | null>(null);
 
   function toggle(s: Source) {
     setSources((cur) =>
@@ -25,11 +29,25 @@ export default function Home() {
     setError(null);
     setBrief(null);
     setTrend(null);
+    setComparison(null);
+    const vsList = vs.split(",").map((v) => v.trim()).filter(Boolean);
     try {
+      if (vsList.length > 0) {
+        // Competitor diff mode.
+        const res = await fetch("/api/compare", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, vs: vsList, sources, contextExclude: exclude }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "request failed");
+        setComparison(data as CompareResult);
+        return;
+      }
       const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, sources, limit: 25 }),
+        body: JSON.stringify({ topic, sources, limit: 25, contextExclude: exclude }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "request failed");
@@ -90,6 +108,22 @@ export default function Home() {
             </button>
           ))}
         </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <input
+            value={vs}
+            onChange={(e) => setVs(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && run()}
+            placeholder="Compare vs… (e.g. Obsidian, comma-separated)"
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
+          />
+          <input
+            value={exclude}
+            onChange={(e) => setExclude(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && run()}
+            placeholder="Exclude terms… (e.g. song, band, movie)"
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
+          />
+        </div>
       </section>
 
       {error && (
@@ -103,6 +137,8 @@ export default function Home() {
           Searching {sources.join(", ")} and scoring authenticity…
         </p>
       )}
+
+      {comparison && <CompareView result={comparison} />}
 
       {brief && (
         <section className="mt-6">
