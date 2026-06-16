@@ -16,7 +16,8 @@ item is trust-scored, and ranking gates on that score. The three product angles
                  ┌──────────────────────────────────────┐
                  │  AUTHENTICITY ENGINE (spine)          │  authenticity.py
                  │  burst · duplicate · thin · anon ·    │  ← the differentiator
-                 │  new-account · low-karma              │
+                 │  new-account · low-karma ·            │  (8 signals)
+                 │  rating-text-mismatch · polarization  │
                  └───────────────┬──────────────────────┘
    adapters/                     │ fusion.py (trust gate · per-source
    ┌──────────────┐              │            normalization · diversity floor)
@@ -25,8 +26,8 @@ item is trust-scored, and ranking gates on that score. The three product angles
    │ pantip    ✅ │  (threaded)  │          • Agent Skill (SKILL.md) ✅
    │ reddit    ✅ │              │          • Web dashboard          ✅
    │ youtube   ✅ │       render md/html/json + compare
-   │ x         ✅ │       --store SQLite (trend tracking)
-   └──────────────┘
+   │ x         ✅ │       --store SQLite ──► trends.py / watchlist.py (alerts)
+   └──────────────┘       --demo: built-in seed data (no network/keys)
 ```
 
 ## Data flow (one run)
@@ -73,9 +74,11 @@ extension point: a new source = one file + one registry line.
 | 2 | Thin `SKILL.md` wrapper, self-contained `.skill` build, plugin manifests | ✅ |
 | 3 | Web dashboard: brief view, reputation-trend chart, HTML export | ✅ |
 | 4 | Competitor diff, YouTube + X adapters, brand disambiguation | ✅ |
+| v0.2 | Watchlist alerts, demo/POC mode, rating-text-mismatch + polarization detectors, Pantip search | ✅ |
 
-Live-validated, code-complete-but-dormant (needs keys: Reddit OAuth, X cookies),
-and current open items are tracked in [STATUS.md](STATUS.md).
+Gated paths (X / Reddit-OAuth / Pantip-search) are validated end-to-end on
+placeholder payloads; live credentials only feed real production data. Current
+open items are tracked in [STATUS.md](STATUS.md).
 
 ## Open risks
 
