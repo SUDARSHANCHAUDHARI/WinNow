@@ -1,49 +1,82 @@
 # Winnow
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Runtime deps](https://img.shields.io/badge/runtime%20deps-0-3fb950)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-69%20passing-3fb950)](tests)
+
 **Last-30-days research weighted by authenticity, not raw engagement.**
 
-A focused answer to [last30days-skill](https://github.com/mvanhorn/last30days-skill): same "what are real people saying" concept, but it fixes the loophole that engagement *is* the score with no check that the engagement is real, and it covers the sources last30days can't — **app-store reviews** and **regional walled gardens** (Pantip/Thailand).
+A focused answer to [last30days-skill](https://github.com/mvanhorn/last30days-skill):
+same "what are real people saying" idea, but Winnow fixes the loophole that
+engagement *is* the score — with no check that the engagement is real — and it
+covers sources last30days skips: **app-store reviews** and **regional walled
+gardens** (Pantip/Thailand). Upvotes, likes, and review stars are the most gamed
+metrics online; Winnow scores every item for authenticity and ranks by *who is
+real*.
 
 ```bash
-python3 engine/winnow.py "Notion" --sources appstore --limit 10
-python3 engine/winnow.py com.whatsapp --sources playstore
-python3 engine/winnow.py "ChatGPT" --sources appstore,pantip
+python3 engine/winnow.py "Notion" --sources appstore,reddit --limit 25
+python3 engine/winnow.py --demo          # try it with zero setup (seed data, no keys)
 ```
+
+## Features
+
+- **Authenticity spine** — every result gets a 0–1 trust score from 8 detectors;
+  ranking *gates* on trust, so a 500-upvote astroturf burst loses to a 50-upvote
+  genuine thread.
+- **6 sources** — App Store + Play Store reviews, Reddit, YouTube, X, and Pantip
+  (Thailand). Official-API / RSS first; every adapter degrades to `[]` on failure
+  rather than crashing.
+- **Competitor diff** — `--vs` produces a side-by-side verdict ("higher rating,
+  but the reviews are less authentic").
+- **Reputation trend tracking** — persist runs to SQLite and chart trust / rating
+  / astroturf-share over time. A watchlist alerts on trust drops and review bursts.
+- **Brand disambiguation** — `--context-exclude` filters keyword sources so
+  "Notion" the app isn't drowned out by "Notion" the band.
+- **Two surfaces** — an Agent Skill (`/winnow`) for Claude Code / Codex / Cursor /
+  Gemini CLI, and a Next.js dashboard with a one-click demo.
+- **Shareable briefs** — emit Markdown, self-contained HTML, or JSON.
+
+## Tech stack
+
+- **Engine** — Python 3.9+, standard library only (**zero runtime dependencies**)
+- **Storage** — SQLite (`--store`) for trend tracking
+- **Dashboard** — Next.js 16, React 19, TypeScript, Tailwind CSS 4
+- **Tests** — pytest (69 tests)
 
 ## Install
 
 **Claude Code (plugin):**
 ```
-/plugin marketplace add <your-org>/winnow
+/plugin marketplace add SUDARSHANCHAUDHARI/WinNow
 /plugin install winnow
 ```
-The plugin install fetches the whole repo, so the skill resolves the engine via
-the repo-checkout fallback - nothing else to do.
 
 **Agent Skills hosts (Codex, Cursor, Gemini CLI, …):**
 ```
-npx skills add <your-org>/winnow -g
+npx skills add SUDARSHANCHAUDHARI/WinNow -g
 ```
 
-**claude.ai (web) or any manual upload:** build a self-contained bundle and
-upload `dist/winnow.skill` via Settings → Capabilities → Skills:
+**claude.ai (web) / manual upload** — build a self-contained bundle and upload
+`dist/winnow.skill` via Settings → Capabilities → Skills:
 ```
 bash build-skill.sh
 ```
 
 **Manual (developer):**
 ```
-git clone <repo> && cd winnow
+git clone https://github.com/SUDARSHANCHAUDHARI/WinNow.git && cd WinNow
 ln -s "$(pwd)/skills/winnow" ~/.claude/skills/winnow   # engine resolves via the in-repo symlink
 ```
 
-Reddit (RSS), App Store, Play Store, and Pantip work with zero configuration.
-Add a free Reddit OAuth app to `.env` (see `.env.example`) to unlock real upvote
-scores plus account-age authenticity signals.
+App Store, Play Store, Reddit (RSS), Pantip, and YouTube work with **zero
+configuration**. Copy `.env.example` to `.env` and add keys to unlock the gated
+paths (Reddit OAuth account-age signals, X search, Pantip search).
 
 ### Web dashboard (optional)
 ```
-cd winnow-web && pnpm install && pnpm dev   # http://localhost:3000
+cd winnow-web && pnpm install && pnpm dev   # http://localhost:3000  → "Try the demo"
 ```
 
 ## Why it's different
@@ -51,62 +84,50 @@ cd winnow-web && pnpm install && pnpm dev   # http://localhost:3000
 | last30days | Winnow |
 |---|---|
 | Engagement = score, no bot/astroturf filter | **Authenticity score on every item**; ranking gates on trust |
-| Reddit/X/YouTube/TikTok/… | Adds **App Store + Play Store reviews** and **Pantip (Thailand)** |
-| Undocumented `/svc/shreddit/` scraping | Official-API/RSS-first; degrades to `[]`, never crashes |
+| Reddit / X / YouTube / TikTok / … | Adds **App Store + Play Store reviews** and **Pantip (Thailand)** |
+| Stateless per run | **Trend tracking + watchlist alerts** over stored runs |
+| Undocumented `/svc/shreddit/` scraping | Official-API / RSS first; degrades to `[]`, never crashes |
 | 1,700-line behavioral SKILL.md | Determinism lives in the engine; the skill wrapper stays thin |
 
 ## The spine: authenticity
 
 Every `Item` carries a `0..1` trust score plus the signals that produced it
-([`engine/lib/authenticity.py`](engine/lib/authenticity.py)). Detectors:
+([`engine/lib/authenticity.py`](engine/lib/authenticity.py)):
 
 - **review-burst** — a spike of items on one day/version = coordinated push
-- **near-duplicate** — templated/copy-pasted text = astroturf
+- **near-duplicate** — templated / copy-pasted text = astroturf
 - **thin-text** — "great app!!!" carries little signal
 - **anon / generated-handle** — missing or auto-looking author
 - **new-account** / **low-karma** — Reddit OAuth enrichment (dormant until keyed)
 - **rating-text-mismatch** — a 5★ review whose words read negative (the star was
   set to move the average while the text leaked the truth)
-- **rating-polarization** — corpus warning when ratings are 1/5-star extremes
+- **rating-polarization** — corpus warning when ratings cluster at the 1/5 extremes
 
-Ranking ([`engine/lib/fusion.py`](engine/lib/fusion.py)) applies a **trust gate**
-(500 upvotes at 0.2 trust rank below 50 at 1.0 trust), **per-source engagement
-normalization** (so a million-view video does not crush a 50-helpful review),
-and a **diversity floor** so no source is shut out of a mixed run.
+Ranking ([`engine/lib/fusion.py`](engine/lib/fusion.py)) applies a **trust gate**,
+**per-source engagement normalization** (so a million-view video doesn't crush a
+50-helpful review), and a **diversity floor** so no source is shut out of a mixed run.
 
 ```bash
 python3 engine/winnow.py "Notion" --vs "Obsidian" --sources appstore   # competitor diff
 python3 engine/winnow.py "Notion" --sources reddit,youtube \
   --context-exclude "song,band,movie"                                  # disambiguation
-python3 engine/winnow.py --demo                                        # POC seed data, no keys
 python3 engine/winnow.py --seed-store && python3 engine/watchlist.py   # reputation alerts
+python3 -m pytest -q                                                   # 69 tests
 ```
 
 ## Status
 
-All four planned phases are built, plus v0.2 (watchlist, demo mode, extra
-detectors). 6 source adapters (App Store, Play Store, Pantip, Reddit, YouTube,
-X), the authenticity spine (8 signals), SQLite persistence, competitor diff, and
-a **watchlist** that alerts on trust drops / astroturf spikes across stored runs.
-Two surfaces: the agent skill and a Next.js dashboard (brief view, trust bars,
-reputation-trend chart, HTML export, competitor diff, **Try the demo**). See
-[STATUS.md](STATUS.md) for the full scorecard.
+All four planned phases plus v0.2 (watchlist, demo mode, extra detectors) are
+shipped. The gated paths (Reddit OAuth, X, Pantip search) are code-complete and
+validated end-to-end on placeholder data; they stay dormant until you add real
+credentials to `.env`. See [STATUS.md](STATUS.md) for the full scorecard and
+[ARCHITECTURE.md](ARCHITECTURE.md) for the design.
 
-**Demo mode** — `winnow --demo` (or the dashboard's "Try the demo" button) runs on
-built-in seed data with no network or keys, and exercises every detector.
+## License
 
-Reddit OAuth, the X adapter, and Pantip search are code-complete (validated
-end-to-end on placeholder data) but dormant until you add credentials to `.env`
-(see `.env.example`).
+[MIT](LICENSE) © 2026 Sudarshan Chaudhari (SudarshanTechLabs).
+No tracking, no analytics — your research stays on your machine.
 
-```bash
-python3 -m pytest -q     # 69 tests
-```
+## Author
 
-## Sources validated (live probes, 2026-06)
-
-- App Store customer reviews RSS — HTTP 200, zero auth ✅
-- Play Store `batchexecute` UsvDTd RPC — HTTP 200 ✅
-- Pantip RSS — HTTP 200 keyless ✅
-
-MIT. Requires Python 3.9+ (zero runtime dependencies).
+Built by **Sudarshan Chaudhari** — [SudarshanTechLabs](https://github.com/SUDARSHANCHAUDHARI).
