@@ -1,6 +1,6 @@
 # Winnow — Status
 
-_Last updated 2026-06-15 · v0.1 (all four planned phases built)_
+_Last updated 2026-06-16 · v0.2 (four phases + POC demo, watchlist, extra detectors)_
 
 ## What Winnow is
 
@@ -19,7 +19,17 @@ surfaces (agent skill + web dashboard).
 | 3 Web dashboard | T9 scaffold · T10 engine API · T11 brief view · T12 trend chart · T13 HTML export | ✅ |
 | 4 Differentiators | T14 competitor diff · T15 YouTube + X adapters | ✅ |
 
-58 engine tests passing. Web typecheck + lint clean.
+### v0.2 additions
+- **POC demo mode** — `winnow --demo` runs on built-in seed data (no network/keys);
+  the seed exercises every detector. Dashboard has a **Try the demo** button
+  (`/api/demo`) that seeds the store and shows brief + trend in one click.
+- **Watchlist + alerts** — `engine/watchlist.py` compares the last two stored runs
+  per topic and alerts on trust drop / rating drop / astroturf spike.
+- **Extra authenticity detectors** — `rating-text-mismatch` (5★ + negative text)
+  and a corpus `rating-polarization` warning (1/5-star manipulation signature).
+- **Pantip search API** — real keyword search, gated on `PANTIP_AUTH`, RSS fallback.
+
+68 engine tests passing. Web typecheck + lint clean.
 
 ## Architecture (see ARCHITECTURE.md)
 
@@ -46,7 +56,7 @@ youtube x                      │                   │              │
 | App Store reviews | iTunes RSS | none |
 | Play Store reviews | batchexecute RPC | none |
 | Reddit | search.rss (keyless) → OAuth enrich | optional `.env` |
-| Pantip (Thailand) | RSS | none |
+| Pantip (Thailand) | RSS (keyless) → search API | optional `PANTIP_AUTH` |
 | YouTube | ytInitialData scrape | none |
 | X / Twitter | GraphQL search | requires `AUTH_TOKEN`+`CT0` cookies |
 
@@ -56,8 +66,10 @@ youtube x                      │                   │              │
 python3 engine/winnow.py "Notion" --sources appstore,reddit --limit 25
 python3 engine/winnow.py "Notion" --vs "Obsidian" --sources appstore   # competitor diff
 python3 engine/winnow.py "Slack" --sources appstore --store            # persist for trends
-cd winnow-web && pnpm dev                                              # dashboard :3000
-python3 -m pytest -q                                                    # 58 tests
+python3 engine/winnow.py --demo                                        # POC seed data, no keys
+python3 engine/winnow.py --seed-store && python3 engine/watchlist.py   # seed + reputation alerts
+cd winnow-web && pnpm dev                                              # dashboard :3000 (Try the demo)
+python3 -m pytest -q                                                    # 68 tests
 bash build-skill.sh                                                     # dist/winnow.skill
 ```
 
@@ -78,7 +90,8 @@ bash build-skill.sh                                                     # dist/w
   ("Exclude terms…" input), matching the engine/CLI.
 - **X query-id rotation**: the GraphQL query id is hard-coded with an env override
   (`X_SEARCH_QUERY_ID`); will need updating when X changes it.
-- **Not a git repo yet**: `git init` + first commit pending.
+- ~~**git repo**~~: DONE - shipped to https://github.com/SUDARSHANCHAUDHARI/WinNow
+  (private), `main` is the source of truth.
 
 ## Bugs caught by live-run discipline
 

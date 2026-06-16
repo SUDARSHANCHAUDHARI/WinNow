@@ -23,6 +23,26 @@ export default function Home() {
     );
   }
 
+  async function loadDemo() {
+    setLoading(true);
+    setError(null);
+    setBrief(null);
+    setTrend(null);
+    setComparison(null);
+    try {
+      const res = await fetch("/api/demo", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "demo failed");
+      setTopic(data.topic);
+      setBrief(data.brief as Brief);
+      setTrend(data.trend as TrendPoint[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "demo failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function run() {
     if (!topic.trim() || sources.length === 0) return;
     setLoading(true);
@@ -69,11 +89,21 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-3xl px-5 pb-24 pt-10">
-      <header className="mb-2">
-        <h1 className="text-3xl font-bold">Winnow</h1>
-        <p className="text-sm text-[var(--muted)]">
-          Last-30-days research ranked by authenticity, not raw engagement.
-        </p>
+      <header className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Winnow</h1>
+          <p className="text-sm text-[var(--muted)]">
+            Last-30-days research ranked by authenticity, not raw engagement.
+          </p>
+        </div>
+        <button
+          onClick={loadDemo}
+          disabled={loading}
+          className="shrink-0 rounded-lg border border-[var(--accent)] px-3 py-1.5 text-xs text-[var(--text)] disabled:opacity-40"
+          title="Seeded sample data — no network or keys needed"
+        >
+          ▶ Try the demo
+        </button>
       </header>
 
       <section className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">

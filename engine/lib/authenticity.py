@@ -39,6 +39,17 @@ def _shingles(text: str, n: int = _DUP_SHINGLE) -> set[str]:
     return {" ".join(words[i : i + n]) for i in range(len(words) - n + 1)}
 
 
+_POSITIVE = frozenset({
+    "love", "great", "amazing", "excellent", "perfect", "best", "awesome",
+    "fantastic", "wonderful", "flawless", "incredible", "brilliant", "superb",
+})
+_NEGATIVE = frozenset({
+    "crash", "crashes", "crashing", "broken", "buggy", "bug", "useless", "terrible",
+    "horrible", "worst", "garbage", "scam", "unusable", "freezes", "slow", "awful",
+    "disappointing", "refund", "stolen", "lag", "laggy",
+})
+
+
 def score_corpus(items: list[Item]) -> None:
     """Mutates each item.authenticity in place."""
     if not items:
@@ -49,6 +60,18 @@ def score_corpus(items: list[Item]) -> None:
         _flag_thin_text(item)
         _flag_anon(item)
         _flag_account_age(item)
+        _flag_rating_text_mismatch(item)
+
+
+def rating_polarization(items: list[Item]) -> float | None:
+    """Share of ratings at the 1/5 extremes vs the middle. High polarization
+    (lots of 5s and 1s, few 2-4s) is a known review-manipulation signature.
+    Returns None when there are too few rated items to judge."""
+    ratings = [i.rating for i in items if i.rating is not None]
+    if len(ratings) < 8:
+        return None
+    extremes = sum(1 for r in ratings if r <= 1 or r >= 5)
+    return extremes / len(ratings)
 
 
 def _flag_bursts(items: list[Item]) -> None:
@@ -129,4 +152,26 @@ def _flag_account_age(item: Item) -> None:
     if isinstance(karma, (int, float)) and karma < _LOW_KARMA:
         item.authenticity.penalize(
             "low-karma", 0.15, f"author has {int(karma)} total karma (<{_LOW_KARMA})",
+        )
+
+
+def _flag_rating_text_mismatch(item: Item) -> None:
+    """A 5-star review whose words are overwhelmingly negative (or a 1-star with
+    glowing praise) is a tell - the star was set to move the average while the
+    text leaks the real sentiment, or it is a careless paid review. Lexicon-based,
+    no NLP. Only fires on review sources that carry a rating."""
+    if item.rating is None:
+        return
+    words = set(_normalize(item.text).split())
+    pos = len(words & _POSITIVE)
+    neg = len(words & _NEGATIVE)
+    if item.rating >= 4 and neg >= 2 and neg > pos:
+        item.authenticity.penalize(
+            "rating-text-mismatch", 0.20,
+            f"{item.rating:.0f}star but text reads negative ({neg} negative cues)",
+        )
+    elif item.rating <= 2 and pos >= 2 and pos > neg:
+        item.authenticity.penalize(
+            "rating-text-mismatch", 0.20,
+            f"{item.rating:.0f}star but text reads positive ({pos} positive cues)",
         )

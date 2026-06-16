@@ -11,6 +11,30 @@ def _item(item_id, text, author="real_person_42x", day=10, eng=100.0):
     )
 
 
+def test_rating_text_mismatch_high_star_negative_text():
+    it = _item("m", "this app keeps crashing, freezes, totally useless and broken now", day=5)
+    it.rating = 5.0
+    authenticity.score_corpus([it, _item("o", "some other unrelated review body here", day=9)])
+    assert any(s.name == "rating-text-mismatch" for s in it.authenticity.signals)
+
+
+def test_rating_text_mismatch_skips_when_no_rating():
+    it = _item("m", "crashing broken useless terrible garbage", day=5)  # no rating (social post)
+    authenticity.score_corpus([it])
+    assert not any(s.name == "rating-text-mismatch" for s in it.authenticity.signals)
+
+
+def test_rating_polarization():
+    mid = [_item(f"m{i}", "ok decent fine", day=i % 20 + 1) for i in range(4)]
+    for m in mid:
+        m.rating = 3.0
+    extremes = [_item(f"e{i}", "text", day=i % 20 + 1) for i in range(12)]
+    for i, e in enumerate(extremes):
+        e.rating = 5.0 if i % 2 == 0 else 1.0
+    assert authenticity.rating_polarization(mid + extremes) >= 0.7
+    assert authenticity.rating_polarization(mid[:3]) is None  # too few
+
+
 def test_clean_item_stays_trusted():
     items = [_item(str(i), f"genuinely useful review number {i} about the app sync feature")
              for i in range(6)]
