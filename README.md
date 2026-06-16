@@ -65,6 +65,9 @@ Every `Item` carries a `0..1` trust score plus the signals that produced it
 - **thin-text** — "great app!!!" carries little signal
 - **anon / generated-handle** — missing or auto-looking author
 - **new-account** / **low-karma** — Reddit OAuth enrichment (dormant until keyed)
+- **rating-text-mismatch** — a 5★ review whose words read negative (the star was
+  set to move the average while the text leaked the truth)
+- **rating-polarization** — corpus warning when ratings are 1/5-star extremes
 
 Ranking ([`engine/lib/fusion.py`](engine/lib/fusion.py)) applies a **trust gate**
 (500 upvotes at 0.2 trust rank below 50 at 1.0 trust), **per-source engagement
@@ -75,18 +78,26 @@ and a **diversity floor** so no source is shut out of a mixed run.
 python3 engine/winnow.py "Notion" --vs "Obsidian" --sources appstore   # competitor diff
 python3 engine/winnow.py "Notion" --sources reddit,youtube \
   --context-exclude "song,band,movie"                                  # disambiguation
+python3 engine/winnow.py --demo                                        # POC seed data, no keys
+python3 engine/winnow.py --seed-store && python3 engine/watchlist.py   # reputation alerts
 ```
 
 ## Status
 
-All four planned phases are built. 6 source adapters (App Store, Play Store,
-Pantip, Reddit, YouTube, X), the authenticity spine, SQLite persistence, and
-competitor diff. Two surfaces: the agent skill and a Next.js dashboard (brief
-view, trust bars, reputation-trend chart, HTML export, competitor diff). See
+All four planned phases are built, plus v0.2 (watchlist, demo mode, extra
+detectors). 6 source adapters (App Store, Play Store, Pantip, Reddit, YouTube,
+X), the authenticity spine (8 signals), SQLite persistence, competitor diff, and
+a **watchlist** that alerts on trust drops / astroturf spikes across stored runs.
+Two surfaces: the agent skill and a Next.js dashboard (brief view, trust bars,
+reputation-trend chart, HTML export, competitor diff, **Try the demo**). See
 [STATUS.md](STATUS.md) for the full scorecard.
 
-Reddit OAuth enrichment and the X adapter are code-complete but dormant until you
-add credentials (see `.env.example`).
+**Demo mode** — `winnow --demo` (or the dashboard's "Try the demo" button) runs on
+built-in seed data with no network or keys, and exercises every detector.
+
+Reddit OAuth, the X adapter, and Pantip search are code-complete (validated
+end-to-end on placeholder data) but dormant until you add credentials to `.env`
+(see `.env.example`).
 
 ```bash
 python3 -m pytest -q     # 69 tests
