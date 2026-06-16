@@ -45,6 +45,17 @@ def test_parse_timeline_extracts_and_filters():
     assert it.published_at is not None and it.published_at.year == 2026
 
 
+def test_fetch_full_path_with_cookies(monkeypatch):
+    # End-to-end against a placeholder timeline: creds present -> token ->
+    # search -> parse. Exercises the whole fetch() path without the real API.
+    monkeypatch.setattr(x.env, "load", lambda: {"AUTH_TOKEN": "a", "CT0": "c"})
+    monkeypatch.setattr(x.http, "get_json", lambda url, **k: _TIMELINE)
+    items = x.fetch("Notion", limit=10)
+    assert len(items) == 1
+    assert items[0].source == "x" and items[0].author == "@devguy"
+    assert items[0].engagement == 253.0
+
+
 def test_registered():
     from lib.adapters import REGISTRY
     assert REGISTRY["x"] is x and "youtube" in REGISTRY

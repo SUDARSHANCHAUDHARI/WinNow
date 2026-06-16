@@ -28,8 +28,11 @@ surfaces (agent skill + web dashboard).
 - **Extra authenticity detectors** — `rating-text-mismatch` (5★ + negative text)
   and a corpus `rating-polarization` warning (1/5-star manipulation signature).
 - **Pantip search API** — real keyword search, gated on `PANTIP_AUTH`, RSS fallback.
+- **Gated paths validated on placeholder data** — X, Reddit-OAuth, and Pantip-search
+  `fetch()` are exercised end-to-end against recorded sample payloads (not just the
+  parsers). Real credentials are only needed for live production data.
 
-68 engine tests passing. Web typecheck + lint clean.
+69 engine tests passing. Web typecheck + lint clean.
 
 ## Architecture (see ARCHITECTURE.md)
 
@@ -69,7 +72,7 @@ python3 engine/winnow.py "Slack" --sources appstore --store            # persist
 python3 engine/winnow.py --demo                                        # POC seed data, no keys
 python3 engine/winnow.py --seed-store && python3 engine/watchlist.py   # seed + reputation alerts
 cd winnow-web && pnpm dev                                              # dashboard :3000 (Try the demo)
-python3 -m pytest -q                                                    # 68 tests
+python3 -m pytest -q                                                    # 69 tests
 bash build-skill.sh                                                     # dist/winnow.skill
 ```
 
