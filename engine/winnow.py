@@ -79,6 +79,11 @@ def build_brief(topic: str, sources: list[str], *, lookback_days: int, limit: in
     authenticity.score_corpus(raw)
     ranked = fusion.rank(raw, limit=limit)
     brief = Brief(topic=topic, items=ranked)
+    pol = authenticity.rating_polarization(raw)
+    if pol is not None and pol >= 0.7:
+        brief.warnings.append(
+            f"Ratings are {pol:.0%} polarized (1/5-star extremes) - a manipulation signature."
+        )
     trust = fusion.corpus_trust(raw)
     if trust < 0.6 and raw:
         brief.warnings.append(
@@ -92,7 +97,11 @@ def build_brief(topic: str, sources: list[str], *, lookback_days: int, limit: in
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="winnow")
-    p.add_argument("topic", help="app name, package id, or free-text topic")
+    p.add_argument("topic", nargs="?", help="app name, package id, or free-text topic")
+    p.add_argument("--demo", action="store_true",
+                   help="run on built-in seed data (no network/keys) for a POC demo")
+    p.add_argument("--seed-store", action="store_true",
+                   help="write backdated demo runs into the store (for the dashboard trend), then exit")
     p.add_argument("--sources", default="appstore",
                    help=f"comma list: {', '.join(REGISTRY)}")
     p.add_argument("--limit", type=int, default=25)
@@ -110,6 +119,15 @@ def main(argv: list[str] | None = None) -> int:
                    help="disambiguation: drop keyword-source items mentioning any of these (comma list)")
     args = p.parse_args(argv)
 
+    from lib import store as _store
+
+    if args.seed_store:
+        from lib import demo
+        db = args.store_path or _store.default_db_path()
+        n = demo.seed_store(str(db), weeks=4)
+        print(f"seeded {n} demo runs for '{demo.DEMO_TOPIC}' -> {db}", file=sys.stderr)
+        return 0
+
     sources = [s.strip() for s in args.sources.split(",") if s.strip()]
     unknown = [s for s in sources if s not in REGISTRY]
     if unknown:
@@ -119,6 +137,25 @@ def main(argv: list[str] | None = None) -> int:
     def _csv(v: str | None) -> list[str]:
         return [t.strip() for t in v.split(",") if t.strip()] if v else []
     ctx_in, ctx_ex = _csv(args.context_include), _csv(args.context_exclude)
+
+    if args.demo:
+        from lib import demo
+        demo_sources = sources if args.sources != "appstore" else ["appstore", "reddit", "youtube", "x", "pantip"]
+        brief = demo.build_brief(demo_sources)
+        output = (render_html.to_html(brief) if args.emit == "html"
+                  else render_json.to_json(brief) if args.emit == "json"
+                  else render.to_markdown(brief))
+        if args.out:
+            Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.out).write_text(output, encoding="utf-8")
+            print(args.out)
+        else:
+            print(output)
+        return 0
+
+    if not args.topic:
+        print("error: topic is required (or use --demo / --seed-store)", file=sys.stderr)
+        return 2
 
     if args.vs:
         from lib import compare

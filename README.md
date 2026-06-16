@@ -89,7 +89,7 @@ Reddit OAuth enrichment and the X adapter are code-complete but dormant until yo
 add credentials (see `.env.example`).
 
 ```bash
-python3 -m pytest -q     # 58 tests
+python3 -m pytest -q     # 68 tests
 ```
 
 ## Sources validated (live probes, 2026-06)
