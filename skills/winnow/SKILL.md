@@ -1,6 +1,6 @@
 ---
 name: winnow
-version: "0.1.0"
+version: "0.2.0"
 description: "Research what real people say about an app or topic in the last 30 days, ranked by authenticity not raw engagement. Covers App Store + Play Store reviews and Pantip (Thailand) — sources other tools skip."
 argument-hint: 'winnow Notion | winnow com.whatsapp --sources playstore | winnow ChatGPT for slack'
 allowed-tools: Bash, Read
