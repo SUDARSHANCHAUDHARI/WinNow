@@ -28,9 +28,15 @@ surfaces (agent skill + web dashboard).
 - **Extra authenticity detectors** — `rating-text-mismatch` (5★ + negative text)
   and a corpus `rating-polarization` warning (1/5-star manipulation signature).
 - **Pantip search API** — real keyword search, gated on `PANTIP_AUTH`, RSS fallback.
-- **Gated paths validated on placeholder data** — X, Reddit-OAuth, and Pantip-search
-  `fetch()` are exercised end-to-end against recorded sample payloads (not just the
-  parsers). Real credentials are only needed for live production data.
+- **Gated paths — tested on placeholder payloads, NOT yet verified live.** X,
+  Reddit-OAuth, and Pantip-search `fetch()` are exercised against recorded sample
+  payloads, which proves the *parsing* given a correct response — it does NOT
+  prove the live request succeeds. Honest confidence: Reddit-OAuth likely works
+  (documented API); **X is experimental** (sends only one GraphQL feature flag and
+  a fixed query id — real X needs the full set, so it will likely return nothing
+  until fixed against a live response); **Pantip-search is experimental** (token
+  format / response shape unconfirmed; RSS covers Pantip regardless). These need a
+  real-key run to confirm and fix.
 
 69 engine tests passing. Web typecheck + lint clean.
 
@@ -54,14 +60,14 @@ youtube x                      │                   │              │
 
 ## Sources
 
-| Source | Path | Auth |
-|--------|------|------|
-| App Store reviews | iTunes RSS | none |
-| Play Store reviews | batchexecute RPC | none |
-| Reddit | search.rss (keyless) → OAuth enrich | optional `.env` |
-| Pantip (Thailand) | RSS (keyless) → search API | optional `PANTIP_AUTH` |
-| YouTube | ytInitialData scrape | none |
-| X / Twitter | GraphQL search | requires `AUTH_TOKEN`+`CT0` cookies |
+| Source | Path | Auth | Live status |
+|--------|------|------|-------------|
+| App Store reviews | iTunes RSS | none | ✅ verified |
+| Play Store reviews | batchexecute RPC | none | ✅ verified |
+| Reddit | search.rss (keyless) → OAuth enrich | optional `.env` | ✅ RSS verified · OAuth likely (unverified) |
+| Pantip (Thailand) | RSS (keyless) → search API | optional `PANTIP_AUTH` | ✅ RSS verified · search API experimental |
+| YouTube | ytInitialData scrape | none | ✅ verified |
+| X / Twitter | GraphQL search | requires `AUTH_TOKEN`+`CT0` cookies | ⚠️ experimental (not verified live) |
 
 ## Run it
 

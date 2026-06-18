@@ -118,10 +118,22 @@ python3 -m pytest -q                                                   # 69 test
 ## Status
 
 All four planned phases plus v0.2 (watchlist, demo mode, extra detectors) are
-shipped. The gated paths (Reddit OAuth, X, Pantip search) are code-complete and
-validated end-to-end on placeholder data; they stay dormant until you add real
-credentials to `.env`. See [STATUS.md](STATUS.md) for the full scorecard and
-[ARCHITECTURE.md](ARCHITECTURE.md) for the design.
+shipped.
+
+**Live and keyless** — App Store, Play Store, Reddit (RSS), YouTube, and Pantip
+(RSS) are validated against the real services and work with zero configuration.
+
+**Keyed paths (stay dormant until you add credentials to `.env`):**
+- **Reddit OAuth** (real scores + account-age signals) — built against Reddit's
+  documented API; parser-tested, not yet run live.
+- **X search** and **Pantip search API** — *experimental*. The parsers are tested
+  against recorded payloads, but the live requests have not been verified end to
+  end (X needs its full GraphQL feature set + current query id; Pantip's token
+  format is unconfirmed). Expect to update these against a live response. Pantip
+  works via RSS regardless.
+
+See [STATUS.md](STATUS.md) for the full scorecard and [ARCHITECTURE.md](ARCHITECTURE.md)
+for the design.
 
 ## License
 
