@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import { guard, safeError } from "../../../lib/apiGuard";
 
 // Engine lives at <repo>/engine/winnow.py; this app is <repo>/winnow-web.
 const ENGINE = path.join(process.cwd(), "..", "engine", "winnow.py");
@@ -49,6 +50,8 @@ function runEngine(topic: string, sources: string[], limit: number, exclude?: st
 }
 
 export async function POST(req: NextRequest) {
+  const _guard = guard(req);
+  if (_guard) return _guard;
   let body: RunBody;
   try {
     body = await req.json();
@@ -77,9 +80,6 @@ export async function POST(req: NextRequest) {
     const brief = await runEngine(topic, sources, limit, body.contextExclude);
     return NextResponse.json(brief);
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "engine failed" },
-      { status: 500 },
-    );
+    return safeError(e);
   }
 }
