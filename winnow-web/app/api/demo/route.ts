@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { guard } from "../../../lib/apiGuard";
 
 const ENGINE = path.join(process.cwd(), "..", "engine", "winnow.py");
 const TRENDS = path.join(process.cwd(), "..", "engine", "trends.py");
@@ -23,7 +24,16 @@ function run(script: string, args: string[]): Promise<string> {
 
 // POST /api/demo - seed the store with backdated runs, then return the demo
 // brief + its trend. No network, no credentials: pure POC seed data.
-export async function POST() {
+// It writes the store, so it is off unless WINNOW_ALLOW_DEMO_SEED=1.
+export async function POST(req: NextRequest) {
+  const _guard = guard(req);
+  if (_guard) return _guard;
+  if (process.env.WINNOW_ALLOW_DEMO_SEED !== "1") {
+    return NextResponse.json(
+      { error: "Demo is disabled. Set WINNOW_ALLOW_DEMO_SEED=1 to enable it." },
+      { status: 403 },
+    );
+  }
   try {
     await run(ENGINE, ["--seed-store"]); // backdated runs for the trend chart
     const briefJson = await run(ENGINE, ["--demo", "--emit", "json"]);

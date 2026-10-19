@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import { guard } from "../../../lib/apiGuard";
 
 const ENGINE = path.join(process.cwd(), "..", "engine", "winnow.py");
 const ALLOWED_SOURCES = ["appstore", "playstore", "reddit", "pantip", "youtube", "x"];
@@ -39,6 +40,8 @@ function runCompare(topic: string, vs: string[], sources: string[], exclude?: st
 }
 
 export async function POST(req: NextRequest) {
+  const _guard = guard(req);
+  if (_guard) return _guard;
   let body: CompareBody;
   try {
     body = await req.json();

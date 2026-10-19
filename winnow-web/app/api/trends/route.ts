@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import { guard } from "../../../lib/apiGuard";
 
 const TRENDS = path.join(process.cwd(), "..", "engine", "trends.py");
 
@@ -26,6 +27,8 @@ function runTrends(topic: string): Promise<unknown> {
 }
 
 export async function GET(req: NextRequest) {
+  const _guard = guard(req);
+  if (_guard) return _guard;
   const topic = (req.nextUrl.searchParams.get("topic") ?? "").trim();
   if (!topic) {
     return NextResponse.json({ error: "topic is required" }, { status: 400 });

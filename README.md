@@ -87,8 +87,10 @@ paths (Reddit OAuth account-age signals, X search, Pantip search).
 
 ### Web dashboard (optional)
 ```
-cd winnow-web && pnpm install && pnpm dev   # http://localhost:3000  → "Try the demo"
+cd winnow-web && pnpm install && WINNOW_ALLOW_DEMO_SEED=1 pnpm dev   # http://localhost:3000  → "Try the demo"
 ```
+"Try the demo" writes seed runs to the local store, so `/api/demo` returns 403
+unless `WINNOW_ALLOW_DEMO_SEED=1` is set.
 
 ## Why it's different
 
